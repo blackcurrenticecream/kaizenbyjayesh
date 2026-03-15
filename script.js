@@ -40,10 +40,14 @@ setPersistence(auth, browserLocalPersistence);
 let user      = null;
 let uData     = {};
 let activeBot = "musashi";
-let botHist   = {};          // { musashi: [], guts: [], ... }
+let botHist   = {};
 let goals     = [];
 let subjects  = [];
 let dailyTargets = [];
+let habits       = [];
+let notes        = [];
+let activeNoteId = null;
+let selectedHabitEmoji = "🧘";
 let selectedSubject  = null;
 let selectedWorkout  = null;
 let selectedMood     = 5;
@@ -58,6 +62,8 @@ let timerSeconds     = 25 * 60;
 let sessionStart     = null;
 let pomodoroPhase    = "focus";
 let analyticsPeriod  = "today";
+// Chart instances — track to destroy before re-render (fixes duplication bug)
+let _charts = {};
 
 // ─── GROQ CORE ───
 async function groq(prompt, temp = 0.85, maxTok = 350, model = MODEL_DEPTH) {
@@ -270,13 +276,13 @@ window.obFinish = async () => {
 // ─── APP INIT ───
 function initApp() {
   applyTheme(uData.theme || "obsidian");
+  applyMode(uData.mode   || "dark");
   setupTopbar();
   startClock();
   initGrid();
   initAquarium();
   loadKaizenScore();
   loadDailyQuote();
-  loadGrindProgress();
   loadBattleHistory();
   loadGoals();
   loadTargets();
@@ -285,25 +291,41 @@ function initApp() {
   loadSessions();
   loadHeatmap();
   loadVisionsToAquarium();
+  loadHabits();
+  loadNotes();
   checkSundayDebrief();
   navTo("warroom");
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredInstall = e; });
 }
 
-function applyTheme(t) {
-  document.body.setAttribute("data-theme", t || "obsidian");
+function applyTheme(t) { document.body.setAttribute("data-theme", t || "obsidian"); }
+
+function applyMode(mode) {
+  document.body.setAttribute("data-mode", mode || "dark");
+  const icon  = document.getElementById("mode-icon");
+  const label = document.getElementById("mode-label");
+  if (icon)  icon.textContent  = mode === "light" ? "🌙" : "☀️";
+  if (label) label.textContent = mode === "light" ? "dark mode" : "light mode";
 }
+
+window.toggleMode = async () => {
+  const next = (uData.mode || "dark") === "dark" ? "light" : "dark";
+  uData.mode = next; applyMode(next);
+  await setDoc(doc(db, "kaizen_users", user.uid), { mode: next }, { merge: true }).catch(() => {});
+  toast(next === "light" ? "light mode ☀️" : "dark mode 🌙");
+};
 
 // ─── TOPBAR / CLOCK ───
 function setupTopbar() {
   const n = uData.name || "warrior";
   const el = document.getElementById("tb-greeting"); if (el) el.textContent = getGreeting() + ", " + n;
-  const av = document.getElementById("tb-avatar");
-  if (av) av.textContent = n[0]?.toUpperCase() || "W";
   const aq = document.getElementById("aq-name"); if (aq) aq.textContent = n;
   const aqt = document.getElementById("aq-time"); if (aqt) aqt.textContent = getGreeting();
-  const da = document.getElementById("dock-avatar"); if (da) da.textContent = n[0]?.toUpperCase() || "👤";
+  // Sidebar
+  const sbn = document.getElementById("sb-name"); if (sbn) sbn.textContent = n;
+  const sba = document.getElementById("sb-avatar"); if (sba) sba.textContent = n[0]?.toUpperCase() || "W";
+  const profAv = document.getElementById("prof-av"); if (profAv) profAv.textContent = n[0]?.toUpperCase() || "W";
 }
 
 function getGreeting() {
@@ -365,17 +387,27 @@ function spawnFish(visions) {
 // ─── NAVIGATION ───
 window.navTo = (page) => {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".dock-item").forEach(d => d.classList.remove("active"));
+  document.querySelectorAll(".sb-item").forEach(d => d.classList.remove("active"));
   const pg = document.getElementById(`pg-${page}`); if (pg) pg.classList.add("active");
-  const di = document.querySelector(`.dock-item[data-page="${page}"]`); if (di) di.classList.add("active");
-  // lazy load page data
+  const si = document.querySelector(`.sb-item[data-page="${page}"]`); if (si) si.classList.add("active");
+  // lazy load
   if (page === "insights")  { loadInsights(); }
   if (page === "analytics") { loadAnalytics(); }
   if (page === "profile")   { setupProfile(); }
   if (page === "path")      { loadGoals(); }
-  if (page === "grind")     { loadGrindProgress(); loadTargets(); loadWinList(); }
+  if (page === "grind")     { loadTargets(); loadWinList(); }
   if (page === "warriors")  { openBot(activeBot); }
   if (page === "focus")     { loadSessions(); loadSubjects(); }
+  if (page === "habits")    { loadHabits(); }
+  if (page === "notes")     { loadNotes(); }
+};
+
+// Onboarding theme selector
+window.selectObTheme = (el, theme) => {
+  obSelectedTheme = theme;
+  document.querySelectorAll(".theme-card").forEach(c => c.classList.remove("active"));
+  el.classList.add("active");
+  document.body.setAttribute("data-theme", theme);
 };
 
 // ─── KAIZEN SCORE ───
@@ -420,7 +452,8 @@ async function loadKaizenScore() {
     uData.streak = streak;
     await setDoc(doc(db, "kaizen_users", user.uid), { streak, lastActive: today() }, { merge: true }).catch(() => {});
 
-    // Update UI
+    const sbs = document.getElementById("sb-score"); if (sbs) sbs.textContent = finalScore;
+    const sbst = document.getElementById("sb-streak"); if (sbst) sbst.textContent = `🔥 ${streak} days`;
     const sn = document.getElementById("score-num"); if (sn) sn.textContent = finalScore;
     const ts = document.getElementById("tb-score"); if (ts) ts.textContent = finalScore;
     const ss = document.getElementById("sm-streak"); if (ss) ss.textContent = streak;
@@ -1131,28 +1164,26 @@ function loadStreakDisplay() {
   wrap.innerHTML = `<span class="sd-num">${streak}</span><span class="sd-label">consecutive days on the path</span>`;
 }
 
-let energyChart = null;
+let energyChartInst = null;
 window.loadEnergyGraph = async (btn, days) => {
-  if (btn) { document.querySelectorAll(".ct-btn").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
+  if (btn) { document.querySelectorAll(".ct-tab").forEach(b => b.classList.remove("active")); btn.classList.add("active"); }
   try {
     const snap = await getDocs(query(collection(db, "kaizen_energy", user.uid, "entries"), orderBy("ts","desc"), limit(days)));
     const entries = []; snap.forEach(d => entries.push(d.data())); entries.reverse();
     const labels = entries.map(e => new Date(e.ts).toLocaleDateString("en-IN", { day:"numeric", month:"short" }));
     const data   = entries.map(e => e.score || 5);
     const canvas = document.getElementById("energy-canvas"); if (!canvas) return;
-    if (energyChart) { energyChart.destroy(); energyChart = null; }
-    const style  = getComputedStyle(document.body);
-    const acc    = style.getPropertyValue("--acc").trim() || "#00f5ff";
-    energyChart = new Chart(canvas, {
+    if (energyChartInst) { energyChartInst.destroy(); energyChartInst = null; }
+    const acc = getComputedStyle(document.body).getPropertyValue("--acc").trim() || "#00f5ff";
+    energyChartInst = new Chart(canvas, {
       type: "line",
-      data: { labels, datasets: [{ data, borderColor: acc, backgroundColor: acc+"22", fill: true, tension: .4, pointBackgroundColor: acc, pointRadius: 4 }] },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales: { x:{ display:false }, y:{ min:0, max:10, display:true, ticks:{ color:"#555", font:{ family:"JetBrains Mono", size:10 } }, grid:{ color:"rgba(255,255,255,.05)" } } } }
+      data: { labels, datasets: [{ data, borderColor: acc, backgroundColor: acc+"22", fill: true, tension: .4, pointBackgroundColor: acc, pointRadius: 3 }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{display:false}, y:{min:0,max:10,ticks:{color:"rgba(255,255,255,.3)",font:{family:"JetBrains Mono",size:9}},grid:{color:"rgba(255,255,255,.04)"}} } }
     });
-    // Stats
     if (data.length) {
       const avg = (data.reduce((a,b)=>a+b,0)/data.length).toFixed(1);
       const stats = document.getElementById("energy-stats");
-      if (stats) stats.innerHTML = `<div class="es-stat"><span class="es-val">${avg}</span><span class="es-label">avg energy</span></div><div class="es-stat"><span class="es-val">${Math.max(...data)}</span><span class="es-label">peak</span></div><div class="es-stat"><span class="es-val">${Math.min(...data)}</span><span class="es-label">lowest</span></div><div class="es-stat"><span class="es-val">${data.length}</span><span class="es-label">logs</span></div>`;
+      if (stats) stats.innerHTML = `<div class="es-s"><span class="es-val">${avg}</span><span class="es-lbl">avg energy</span></div><div class="es-s"><span class="es-val">${Math.max(...data)}</span><span class="es-lbl">peak</span></div><div class="es-s"><span class="es-val">${Math.min(...data)}</span><span class="es-lbl">lowest</span></div><div class="es-s"><span class="es-val">${data.length}</span><span class="es-lbl">logs</span></div>`;
     }
   } catch {}
 };
@@ -1374,6 +1405,167 @@ async function checkSundayDebrief() {
     const txt = document.getElementById("sunday-txt"); if (txt) txt.textContent = r;
   } catch {}
 }
+
+// ─── HABITS ───
+let selectedHabitEmoji = "🧘";
+window.selectHabitEmoji = (el, emoji) => {
+  selectedHabitEmoji = emoji;
+  document.querySelectorAll(".he-pick").forEach(e => e.classList.remove("active"));
+  el.classList.add("active");
+};
+
+window.addHabit = async () => {
+  const nm = document.getElementById("habit-name")?.value.trim(); if (!nm) { toast("enter habit name"); return; }
+  const ref = await addDoc(collection(db,"kaizen_users",user.uid,"habits"), {
+    name: nm, emoji: selectedHabitEmoji, streak: 0, createdAt: Date.now()
+  }).catch(() => null);
+  if (ref) {
+    document.getElementById("habit-name").value = "";
+    document.getElementById("add-habit-form")?.classList.remove("visible");
+    toast("habit added 🔁");
+    loadHabits();
+  }
+};
+
+async function loadHabits() {
+  const grid = document.getElementById("habits-grid"); if (!grid) return;
+  try {
+    const snap = await getDocs(collection(db,"kaizen_users",user.uid,"habits"));
+    habits = []; snap.forEach(d => habits.push({ id:d.id, ...d.data() }));
+    if (!habits.length) { grid.innerHTML = '<div class="empty-state">no habits yet — add your first one above</div>'; return; }
+    grid.innerHTML = "";
+    habits.forEach(h => {
+      const done = h.completedDates?.includes(today());
+      const card = document.createElement("div"); card.className = `habit-card${done?" done":""}`;
+      // Compute 7-day streak
+      let streak = 0;
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(); d.setDate(d.getDate()-i);
+        if (h.completedDates?.includes(d.toISOString().split("T")[0])) streak++;
+        else if (i > 0) break;
+      }
+      const pct = Math.min(100, (streak / 21) * 100);
+      card.innerHTML = `
+        <div class="hc-top">
+          <span class="hc-ico">${h.emoji||"🔁"}</span>
+          <span class="hc-streak-badge">🔥 ${streak}</span>
+        </div>
+        <div class="hc-name">${h.name}</div>
+        <div class="hc-streak-txt">${streak} day streak · best in 30d</div>
+        <div class="hc-prog"><div class="hc-prog-fill" style="width:${pct}%"></div></div>
+        <button class="habit-check-btn" onclick="toggleHabit('${h.id}',${done})">${done?"✓ done today":"mark done"}</button>
+      `;
+      grid.appendChild(card);
+    });
+  } catch {}
+}
+
+window.toggleHabit = async (id, done) => {
+  const h = habits.find(h => h.id === id); if (!h) return;
+  const dates = h.completedDates || [];
+  const t = today();
+  if (done) { h.completedDates = dates.filter(d => d !== t); }
+  else       { h.completedDates = [...dates, t]; }
+  await setDoc(doc(db,"kaizen_users",user.uid,"habits",id), { completedDates: h.completedDates }, { merge:true }).catch(() => {});
+  loadHabits(); loadKaizenScore();
+  toast(done ? "unchecked" : "habit done! 🔥");
+};
+
+// ─── NOTES ───
+window.newNote = () => {
+  activeNoteId = null;
+  const ti = document.getElementById("note-title"); if (ti) ti.value = "";
+  const bo = document.getElementById("note-body");  if (bo) bo.value = "";
+};
+
+async function loadNotes() {
+  const list = document.getElementById("notes-list"); if (!list) return;
+  try {
+    const snap = await getDocs(query(collection(db,"kaizen_users",user.uid,"notes"), orderBy("ts","desc"), limit(30)));
+    notes = []; snap.forEach(d => notes.push({ id:d.id, ...d.data() }));
+    if (!notes.length) { list.innerHTML = '<div class="empty-state">no notes yet</div>'; return; }
+    list.innerHTML = "";
+    notes.forEach(n => {
+      const item = document.createElement("div"); item.className = `note-item${activeNoteId===n.id?" active":""}`;
+      const dt = new Date(n.ts).toLocaleDateString("en-IN", { day:"numeric", month:"short" });
+      item.innerHTML = `<div class="ni-title">${n.title||"untitled"}</div><div class="ni-date">${dt}</div>`;
+      item.onclick = () => openNote(n);
+      list.appendChild(item);
+    });
+  } catch {}
+}
+
+function openNote(n) {
+  activeNoteId = n.id;
+  const ti = document.getElementById("note-title"); if (ti) ti.value = n.title || "";
+  const bo = document.getElementById("note-body");  if (bo) bo.value = n.body  || "";
+  document.querySelectorAll(".note-item").forEach(ni => ni.classList.toggle("active", ni.querySelector(".ni-title")?.textContent === (n.title||"untitled")));
+}
+
+window.saveNote = async () => {
+  const title = document.getElementById("note-title")?.value.trim() || "untitled";
+  const body  = document.getElementById("note-body")?.value  || "";
+  if (activeNoteId) {
+    await setDoc(doc(db,"kaizen_users",user.uid,"notes",activeNoteId), { title, body, ts: Date.now() }, { merge:true }).catch(() => {});
+  } else {
+    const ref = await addDoc(collection(db,"kaizen_users",user.uid,"notes"), { title, body, ts:Date.now() }).catch(() => null);
+    if (ref) activeNoteId = ref.id;
+  }
+  toast("note saved ✓"); loadNotes();
+};
+
+window.deleteCurrentNote = async () => {
+  if (!activeNoteId) return;
+  if (!confirm("delete this note?")) return;
+  await deleteDoc(doc(db,"kaizen_users",user.uid,"notes",activeNoteId)).catch(() => {});
+  activeNoteId = null;
+  document.getElementById("note-title").value = "";
+  document.getElementById("note-body").value = "";
+  loadNotes(); toast("note deleted");
+};
+
+// Export notes as simple HTML → triggers print/PDF
+window.exportNotes = async () => {
+  try {
+    const snap = await getDocs(query(collection(db,"kaizen_users",user.uid,"notes"), orderBy("ts","desc")));
+    let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kaizen Notes — ${uData.name||"warrior"}</title><style>body{font-family:Georgia,serif;max-width:700px;margin:40px auto;line-height:1.7;color:#1a1a2e}h1{font-size:2rem;margin-bottom:2rem;border-bottom:2px solid #333;padding-bottom:.5rem}.note{margin-bottom:3rem;page-break-inside:avoid}.note h2{font-size:1.3rem;margin-bottom:.5rem}.note .date{font-size:.75rem;color:#666;margin-bottom:1rem}.note .body{white-space:pre-wrap}@media print{body{margin:20px}}</style></head><body><h1>📝 Kaizen Notes — ${uData.name||"warrior"}</h1>`;
+    snap.forEach(d => {
+      const n = d.data();
+      const dt = new Date(n.ts).toLocaleDateString("en-IN", { weekday:"short", day:"numeric", month:"long", year:"numeric" });
+      html += `<div class="note"><h2>${n.title||"untitled"}</h2><div class="date">${dt}</div><div class="body">${(n.body||"").replace(/</g,"&lt;")}</div></div>`;
+    });
+    html += `</body></html>`;
+    const win = window.open("","_blank");
+    win.document.write(html); win.document.close();
+    setTimeout(() => win.print(), 500);
+  } catch { toast("export failed"); }
+};
+
+// ─── VISION BOARD TOGGLE ───
+window.toggleAddVision = () => {
+  const f = document.getElementById("add-vision-form");
+  if (f) f.style.display = f.style.display === "none" ? "flex" : "none";
+};
+
+// ─── TOGGLE ADD TARGET ───
+window.toggleAddTarget = () => {
+  const f = document.getElementById("add-target-form");
+  if (f) f.style.display = f.style.display === "none" ? "flex" : "none";
+};
+
+// ─── WARRIORS CONTEXT (renamed to avoid clash) ───
+window.toggleCtx = () => {
+  const panel = document.getElementById("ws-ctx");
+  const arrow = document.getElementById("ctx-arr");
+  if (!panel) return;
+  const open = panel.style.display === "none";
+  panel.style.display = open ? "block" : "none";
+  if (arrow) arrow.style.transform = open ? "rotate(90deg)" : "";
+  if (open && uData.userContext) {
+    const inp = document.getElementById("ctx-input"); if (inp) inp.value = uData.userContext;
+  }
+};
+window.saveCtx = window.saveUserContext;
 
 // ─── START ───
 runLoadingSequence(() => {
