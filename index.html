@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <title>Kaizen ⚔️ — Unravel Labs</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#0a0a0f"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Kaizen"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body data-theme="obsidian">
+
+<!-- CANVAS GRID BG -->
+<canvas id="grid-canvas"></canvas>
+
+<!-- WIPE TRANSITION -->
+<div id="wipe" class="wipe"></div>
+
+<!-- TOAST -->
+<div id="k-toast" class="k-toast"></div>
+
+<!-- ═══════════════════════════════════════════
+     LOADING SCREEN
+═══════════════════════════════════════════ -->
+<div id="loading" class="loading-screen">
+  <div class="ls-inner">
+    <div class="ls-logo-wrap">
+      <div class="ls-emblem">⚔️</div>
+      <h1 class="ls-title">KAIZEN</h1>
+      <p class="ls-sub">by unravel labs</p>
+    </div>
+    <div class="ls-terminal">
+      <div class="ls-line" id="ls-l1">$ initializing system...</div>
+      <div class="ls-line" id="ls-l2">$ loading warrior protocols...</div>
+      <div class="ls-line" id="ls-l3">$ establishing secure connection...</div>
+      <div class="ls-line" id="ls-l4">$ system ready ✓</div>
+    </div>
+    <div class="ls-bar-wrap"><div class="ls-bar"><div class="ls-fill" id="ls-fill"></div></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     AUTH SCREEN
+═══════════════════════════════════════════ -->
+<div id="s-auth" class="screen" style="display:none">
+  <div class="auth-bg">
+    <canvas id="auth-particles"></canvas>
+    <div class="auth-grid"></div>
+  </div>
+  <div class="auth-center">
+    <div class="auth-card glass-card">
+      <div class="auth-emblem">⚔️</div>
+      <h1 class="auth-title">KAIZEN</h1>
+      <p class="auth-desc">continuous improvement · unravel labs</p>
+      <div class="auth-divider"></div>
+      <p class="auth-tagline">the path is the point.<br/>not the destination.</p>
+      <button id="btn-google" class="google-btn">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+      <p class="auth-fine">secure · private · yours</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ONBOARDING
+═══════════════════════════════════════════ -->
+<div id="s-onboard" class="screen" style="display:none">
+  <div class="ob-wrap">
+    <div class="ob-progress-bar"><div class="ob-prog-fill" id="ob-fill" style="width:25%"></div></div>
+    <div class="ob-card glass-card">
+
+      <!-- Step 1: Name -->
+      <div id="ob1" class="ob-step active">
+        <div class="ob-step-num">01 / 04</div>
+        <div class="ob-icon">⚔️</div>
+        <h2 class="ob-title">what do they call you?</h2>
+        <p class="ob-hint">every warrior needs a name.</p>
+        <input id="ob-name" class="k-input" type="text" placeholder="enter your name..." maxlength="30" autocomplete="off"/>
+        <button class="k-btn" onclick="obNext(1)">next <span class="btn-arrow">→</span></button>
+      </div>
+
+      <!-- Step 2: Theme -->
+      <div id="ob2" class="ob-step">
+        <div class="ob-step-num">02 / 04</div>
+        <div class="ob-icon">🎨</div>
+        <h2 class="ob-title">choose your aesthetic</h2>
+        <p class="ob-hint">this is your war room. make it yours.</p>
+        <div class="theme-grid">
+          <div class="theme-card active" data-theme="obsidian" onclick="selectTheme(this,'obsidian')">
+            <div class="tc-preview tc-obsidian"></div>
+            <span class="tc-name">Obsidian HUD</span>
+            <span class="tc-desc">Cyberpunk · Cyan</span>
+          </div>
+          <div class="theme-card" data-theme="academic" onclick="selectTheme(this,'academic')">
+            <div class="tc-preview tc-academic"></div>
+            <span class="tc-name">Academic Graph</span>
+            <span class="tc-desc">Dark Academia · Gold</span>
+          </div>
+          <div class="theme-card" data-theme="samurai" onclick="selectTheme(this,'samurai')">
+            <div class="tc-preview tc-samurai"></div>
+            <span class="tc-name">Samurai Dojo</span>
+            <span class="tc-desc">Black · Crimson</span>
+          </div>
+          <div class="theme-card" data-theme="arctic" onclick="selectTheme(this,'arctic')">
+            <div class="tc-preview tc-arctic"></div>
+            <span class="tc-name">Arctic Terminal</span>
+            <span class="tc-desc">Ice Blue · Frost</span>
+          </div>
+        </div>
+        <button class="k-btn" onclick="obNext(2)">next <span class="btn-arrow">→</span></button>
+      </div>
+
+      <!-- Step 3: Goals -->
+      <div id="ob3" class="ob-step">
+        <div class="ob-step-num">03 / 04</div>
+        <div class="ob-icon">🎯</div>
+        <h2 class="ob-title">what are you fixing?</h2>
+        <p class="ob-hint">be honest. no one's watching.</p>
+        <div class="ob-goals-grid">
+          <div class="og-pill" onclick="toggleGoal(this,'mental health')">🧠 mental health</div>
+          <div class="og-pill" onclick="toggleGoal(this,'consistency')">🔥 consistency</div>
+          <div class="og-pill" onclick="toggleGoal(this,'academics')">📚 academics</div>
+          <div class="og-pill" onclick="toggleGoal(this,'fitness')">💪 fitness</div>
+          <div class="og-pill" onclick="toggleGoal(this,'focus')">⚡ focus</div>
+          <div class="og-pill" onclick="toggleGoal(this,'anger')">💢 anger</div>
+          <div class="og-pill" onclick="toggleGoal(this,'motivation')">🚀 motivation</div>
+          <div class="og-pill" onclick="toggleGoal(this,'purpose')">🌊 purpose</div>
+        </div>
+        <button class="k-btn" onclick="obNext(3)">next <span class="btn-arrow">→</span></button>
+      </div>
+
+      <!-- Step 4: Warrior -->
+      <div id="ob4" class="ob-step">
+        <div class="ob-step-num">04 / 04</div>
+        <div class="ob-icon">🗡️</div>
+        <h2 class="ob-title">choose your first warrior</h2>
+        <p class="ob-hint">your AI guide. choose who speaks to you right now.</p>
+        <div class="ob-warriors">
+          <div class="ow-card active" data-bot="musashi" onclick="selectObBot(this,'musashi')">
+            <span class="ow-ico">🗡️</span>
+            <span class="ow-name">Musashi</span>
+            <span class="ow-role">discipline · clarity</span>
+          </div>
+          <div class="ow-card" data-bot="guts" onclick="selectObBot(this,'guts')">
+            <span class="ow-ico">⚔️</span>
+            <span class="ow-name">Guts</span>
+            <span class="ow-role">raw · no excuses</span>
+          </div>
+          <div class="ow-card" data-bot="sasuke" onclick="selectObBot(this,'sasuke')">
+            <span class="ow-ico">🔥</span>
+            <span class="ow-name">Sasuke</span>
+            <span class="ow-role">cold logic</span>
+          </div>
+          <div class="ow-card" data-bot="luffy" onclick="selectObBot(this,'luffy')">
+            <span class="ow-ico">🌊</span>
+            <span class="ow-name">Luffy</span>
+            <span class="ow-role">chaotic energy</span>
+          </div>
+          <div class="ow-card" data-bot="thorfinn" onclick="selectObBot(this,'thorfinn')">
+            <span class="ow-ico">🌿</span>
+            <span class="ow-name">Thorfinn</span>
+            <span class="ow-role">quiet · breathe</span>
+          </div>
+        </div>
+        <button class="k-btn" onclick="obFinish()">enter kaizen ⚔️</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════ -->
+<div id="s-app" class="screen" style="display:none">
+  <div class="app-shell">
+
+    <!-- ── TOPBAR ── -->
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="tb-logo">KAIZEN</div>
+        <div class="tb-streak" id="tb-streak"><span class="streak-fire">🔥</span><span id="tb-streak-num">0</span></div>
+      </div>
+      <div class="tb-center" id="tb-greeting">good morning, warrior</div>
+      <div class="tb-right">
+        <div class="tb-score-wrap">
+          <span class="tb-score-label">SCORE</span>
+          <span class="tb-score-val" id="tb-score">0</span>
+        </div>
+        <div class="tb-clock" id="tb-clock">00:00</div>
+        <div class="tb-avatar" id="tb-avatar" onclick="navTo('profile')"></div>
+      </div>
+    </header>
+
+    <!-- ── PAGES ── -->
+    <main class="pages-wrap" id="pages-wrap">
+
+      <!-- ╔═══════════════════════════════════
+           ║  WAR ROOM (Home)
+           ╚═══════════════════════════════════ -->
+      <div id="pg-warroom" class="page active">
+
+        <!-- Aquarium Header -->
+        <div class="aquarium-header" id="aquarium">
+          <div class="aq-overlay"></div>
+          <div class="aq-fish-layer" id="aq-fish-layer"></div>
+          <div class="aq-content">
+            <div class="aq-greeting">
+              <span class="aq-time" id="aq-time">good morning</span>
+              <h2 class="aq-name">welcome back, <span id="aq-name">warrior</span></h2>
+            </div>
+            <div class="aq-score-hud">
+              <div class="score-ring-wrap">
+                <svg class="score-ring" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6"/>
+                  <circle id="score-ring-arc" cx="60" cy="60" r="52" fill="none" stroke="var(--acc)" stroke-width="6" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" transform="rotate(-90 60 60)"/>
+                </svg>
+                <div class="score-inner">
+                  <div class="score-num" id="score-num">0</div>
+                  <div class="score-lbl">/ 100</div>
+                </div>
+              </div>
+              <div class="score-meta">
+                <div class="sm-streak"><span class="sm-val" id="sm-streak">0</span><span class="sm-label">day streak</span></div>
+                <div class="sm-wins"><span class="sm-val" id="sm-wins">0</span><span class="sm-label">wins today</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-content">
+          <!-- Daily 3 -->
+          <div class="glass-card d3-card">
+            <div class="card-header">
+              <span class="card-title">⚡ DAILY 3</span>
+              <span class="card-badge" id="d3-status">pending</span>
+            </div>
+            <div class="d3-body" id="d3-body">
+              <div class="d3-row">
+                <label class="d3-label">💢 what sucked today</label>
+                <input id="d3-bad" class="k-input" placeholder="be brutally honest..."/>
+              </div>
+              <div class="d3-row">
+                <label class="d3-label">✅ one win (no matter how small)</label>
+                <input id="d3-good" class="k-input" placeholder="something went right..."/>
+              </div>
+              <div class="d3-row">
+                <label class="d3-label">🎯 tomorrow's single target</label>
+                <input id="d3-target" class="k-input" placeholder="one thing only..."/>
+              </div>
+              <button class="k-btn" onclick="submitDaily3()">lock it in →</button>
+            </div>
+            <div class="d3-done" id="d3-done" style="display:none">
+              <div class="d3-done-msg">daily 3 locked ✓</div>
+              <div id="d3-musashi-resp" class="d3-ai-resp"></div>
+            </div>
+          </div>
+
+          <!-- Quick Warriors -->
+          <div class="section-label">QUICK ACCESS</div>
+          <div class="warriors-quick-row">
+            <div class="wq-card" data-bot="musashi" onclick="quickToWarrior('musashi')"><span>🗡️</span><span>Musashi</span></div>
+            <div class="wq-card" data-bot="guts" onclick="quickToWarrior('guts')"><span>⚔️</span><span>Guts</span></div>
+            <div class="wq-card" data-bot="sasuke" onclick="quickToWarrior('sasuke')"><span>🔥</span><span>Sasuke</span></div>
+            <div class="wq-card" data-bot="luffy" onclick="quickToWarrior('luffy')"><span>🌊</span><span>Luffy</span></div>
+            <div class="wq-card" data-bot="thorfinn" onclick="quickToWarrior('thorfinn')"><span>🌿</span><span>Thorfinn</span></div>
+            <div class="wq-card wq-dk" onclick="quickToWarrior('dkbose')"><span>💀</span><span>DK Bose</span></div>
+          </div>
+
+          <!-- Today's Quote -->
+          <div class="glass-card quote-card">
+            <div class="qc-marks">"</div>
+            <p class="qc-text" id="daily-quote">loading your daily wisdom...</p>
+            <div class="qc-source" id="quote-source">— Musashi</div>
+            <button class="qc-refresh" onclick="loadDailyQuote()">↻</button>
+          </div>
+
+          <!-- Anger Room Quick -->
+          <div class="anger-quick-card glass-card" onclick="navTo('battlelog')">
+            <div class="aqc-left">
+              <span class="aqc-icon">💢</span>
+              <div>
+                <p class="aqc-title">ANGER ROOM</p>
+                <p class="aqc-sub">write it. burn it. gone forever.</p>
+              </div>
+            </div>
+            <span class="aqc-arrow">→</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  FOCUS
+           ╚═══════════════════════════════════ -->
+      <div id="pg-focus" class="page">
+        <!-- Focus Header -->
+        <div class="focus-header glass-card">
+          <div class="fh-left">
+            <div class="fh-session-info">
+              <span class="fh-live" id="fh-live-badge">● READY</span>
+              <span class="fh-subject" id="fh-subject-display">no subject selected</span>
+            </div>
+            <div class="fh-time-display" id="fh-time-display">00:00</div>
+            <div class="fh-stats-row">
+              <div class="fh-stat"><span id="fh-sessions-today">0</span><small>sessions</small></div>
+              <div class="fh-stat"><span id="fh-total-today">0h 0m</span><small>focus time</small></div>
+              <div class="fh-stat"><span id="fh-streak-focus">0</span><small>streak</small></div>
+            </div>
+          </div>
+          <div class="fh-right">
+            <div class="fh-mode-tabs">
+              <button class="fmt-btn active" onclick="setTimerMode('pomodoro',this)">Pomodoro</button>
+              <button class="fmt-btn" onclick="setTimerMode('stopwatch',this)">Stopwatch</button>
+            </div>
+            <div class="fh-pom-config" id="pom-config">
+              <div class="pom-cfg-row">
+                <label>Focus</label>
+                <input type="number" id="pom-focus-min" value="25" min="1" max="120" class="pom-input"/>
+                <small>min</small>
+              </div>
+              <div class="pom-cfg-row">
+                <label>Break</label>
+                <input type="number" id="pom-break-min" value="5" min="1" max="30" class="pom-input"/>
+                <small>min</small>
+              </div>
+            </div>
+            <div class="fh-controls">
+              <button class="fc-btn fc-reset" onclick="resetTimer()" title="reset">↺</button>
+              <button class="fc-btn fc-play" id="fc-play" onclick="toggleTimer()">▶</button>
+              <button class="fc-btn fc-stop" onclick="stopSession()" title="complete">✓</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="focus-body">
+          <div class="focus-col-left">
+            <!-- Subject Selector -->
+            <div class="glass-card">
+              <div class="card-header">
+                <span class="card-title">📚 SUBJECT</span>
+                <button class="card-btn" onclick="showAddSubject()">+ add</button>
+              </div>
+              <div class="subject-list" id="subject-list">
+                <div class="subject-empty">no subjects yet — add one above</div>
+              </div>
+            </div>
+
+            <!-- Ambient Sounds -->
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">🎵 AMBIENT</span></div>
+              <div class="ambient-grid">
+                <button class="amb-btn active" onclick="setAmbient('off',this)" data-sound="off">
+                  <span class="amb-ico">🔇</span><span>Off</span>
+                </button>
+                <button class="amb-btn" onclick="setAmbient('rain',this)" data-sound="rain">
+                  <span class="amb-ico">🌧️</span><span>Rain</span>
+                </button>
+                <button class="amb-btn" onclick="setAmbient('fire',this)" data-sound="fire">
+                  <span class="amb-ico">🔥</span><span>Fire</span>
+                </button>
+                <button class="amb-btn" onclick="setAmbient('cafe',this)" data-sound="cafe">
+                  <span class="amb-ico">☕</span><span>Café</span>
+                </button>
+                <button class="amb-btn" onclick="setAmbient('wind',this)" data-sound="wind">
+                  <span class="amb-ico">🌬️</span><span>Wind</span>
+                </button>
+                <button class="amb-btn" onclick="setAmbient('space',this)" data-sound="space">
+                  <span class="amb-ico">🌌</span><span>Space</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="focus-col-right">
+            <!-- Task List -->
+            <div class="glass-card">
+              <div class="card-header">
+                <span class="card-title">✅ SESSION TASKS</span>
+                <span class="card-badge" id="task-count">0</span>
+              </div>
+              <div class="task-input-row">
+                <input id="task-in" class="k-input" placeholder="add a task..." onkeydown="if(event.key==='Enter')addTask()"/>
+                <button class="k-btn-sm" onclick="addTask()">+</button>
+              </div>
+              <div class="task-list" id="task-list"></div>
+            </div>
+
+            <!-- Distraction Pad -->
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">🧠 DISTRACTION PAD</span></div>
+              <textarea id="distraction-pad" class="k-textarea" placeholder="dump distracting thoughts here... don't let them break your flow"></textarea>
+              <button class="k-btn-sm danger" onclick="clearDistractions()">clear</button>
+            </div>
+
+            <!-- DK BOSE -->
+            <div class="glass-card dkbose-card">
+              <div class="card-header">
+                <span class="card-title">💀 DK BOSE</span>
+                <span class="dkb-tag">BRUTAL MODE</span>
+              </div>
+              <div class="dkb-chat" id="dkb-chat">
+                <div class="dkb-msg dkb-system">DK Bose is watching your laziness. Start working or face consequences.</div>
+              </div>
+              <div class="dkb-input-row">
+                <input id="dkb-in" class="k-input" placeholder="make an excuse..." onkeydown="if(event.key==='Enter')sendDKBose()"/>
+                <button class="dkb-send" onclick="sendDKBose()">→</button>
+              </div>
+            </div>
+
+            <!-- Recent Sessions -->
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">⏱ RECENT SESSIONS</span></div>
+              <div class="sessions-list" id="sessions-list">
+                <div class="sess-empty">no sessions yet today</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  WARRIORS
+           ╚═══════════════════════════════════ -->
+      <div id="pg-warriors" class="page">
+        <div class="warriors-layout">
+
+          <!-- Warrior Selector Sidebar -->
+          <div class="warrior-sidebar">
+            <div class="ws-header">
+              <span class="ws-title">WARRIORS</span>
+            </div>
+            <!-- Context Panel -->
+            <div class="ws-context-btn glass-card" onclick="toggleUserContext()">
+              <span>👤</span>
+              <span>your context</span>
+              <span class="ctx-arrow" id="ctx-arrow">›</span>
+            </div>
+            <div class="ws-context-panel" id="ws-context-panel" style="display:none">
+              <textarea id="user-context-input" class="k-textarea" placeholder="tell the warriors about yourself — your goals, struggles, what you're working on. they'll remember this in every chat."></textarea>
+              <button class="k-btn-sm" onclick="saveUserContext()">save context</button>
+            </div>
+
+            <div class="warrior-list">
+              <div class="warrior-item active" data-bot="musashi" onclick="selectWarrior(this,'musashi')">
+                <span class="wi-ico">🗡️</span>
+                <div class="wi-info">
+                  <span class="wi-name">Musashi</span>
+                  <span class="wi-role">discipline · clarity</span>
+                </div>
+              </div>
+              <div class="warrior-item" data-bot="guts" onclick="selectWarrior(this,'guts')">
+                <span class="wi-ico">⚔️</span>
+                <div class="wi-info">
+                  <span class="wi-name">Guts</span>
+                  <span class="wi-role">raw · no excuses</span>
+                </div>
+              </div>
+              <div class="warrior-item" data-bot="sasuke" onclick="selectWarrior(this,'sasuke')">
+                <span class="wi-ico">🔥</span>
+                <div class="wi-info">
+                  <span class="wi-name">Sasuke</span>
+                  <span class="wi-role">cold logic · analysis</span>
+                </div>
+              </div>
+              <div class="warrior-item" data-bot="luffy" onclick="selectWarrior(this,'luffy')">
+                <span class="wi-ico">🌊</span>
+                <div class="wi-info">
+                  <span class="wi-name">Luffy</span>
+                  <span class="wi-role">chaos · forward momentum</span>
+                </div>
+              </div>
+              <div class="warrior-item" data-bot="thorfinn" onclick="selectWarrior(this,'thorfinn')">
+                <span class="wi-ico">🌿</span>
+                <div class="wi-info">
+                  <span class="wi-name">Thorfinn</span>
+                  <span class="wi-role">quiet · just breathe</span>
+                </div>
+              </div>
+              <div class="warrior-item warrior-dk" data-bot="dkbose" onclick="selectWarrior(this,'dkbose')">
+                <span class="wi-ico">💀</span>
+                <div class="wi-info">
+                  <span class="wi-name">DK Bose</span>
+                  <span class="wi-role">brutal · no mercy</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="ws-actions">
+              <button class="wsa-btn" onclick="newWarriorChat()">+ new chat</button>
+              <button class="wsa-btn" onclick="toggleChatHistory()">📋 history</button>
+            </div>
+          </div>
+
+          <!-- Chat Area -->
+          <div class="warrior-chat-area">
+            <div class="chat-warrior-header" id="chat-warrior-header">
+              <div class="cwh-bot-info">
+                <span class="cwh-ico" id="cwh-ico">🗡️</span>
+                <div>
+                  <span class="cwh-name" id="cwh-name">Musashi</span>
+                  <span class="cwh-status">online · ready</span>
+                </div>
+              </div>
+              <button class="cwh-clear" onclick="newWarriorChat()" title="new chat">⊕ new</button>
+            </div>
+
+            <!-- Terminal Chat -->
+            <div class="terminal-chat" id="warrior-msgs">
+              <div class="tc-boot">
+                <div class="tc-boot-line">█ KAIZEN WARRIOR PROTOCOL v2.0</div>
+                <div class="tc-boot-line">█ warrior: <span id="tc-warrior-name">MUSASHI</span> loaded</div>
+                <div class="tc-boot-line">█ awaiting input...</div>
+              </div>
+            </div>
+
+            <!-- Chat History Panel -->
+            <div class="chat-history-panel" id="chat-history-panel" style="display:none">
+              <div class="chp-header">
+                <span>CHAT HISTORY</span>
+                <button onclick="toggleChatHistory()">✕</button>
+              </div>
+              <div id="chat-history-list"></div>
+              <div class="chp-footer">
+                <button class="danger-btn-sm" onclick="deleteAllChats()">delete all chats</button>
+              </div>
+            </div>
+
+            <div class="chat-input-row">
+              <div class="ci-terminal-prefix">›</div>
+              <input id="warrior-in" class="terminal-input" placeholder="type your message..." onkeydown="if(event.key==='Enter')sendWarriorMsg()"/>
+              <button class="ci-send" onclick="sendWarriorMsg()">⏎</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  BATTLE LOG
+           ╚═══════════════════════════════════ -->
+      <div id="pg-battlelog" class="page">
+        <div class="page-header-bar">
+          <h2 class="ph-title">⚔️ BATTLE LOG</h2>
+          <span class="ph-sub">your daily grind, written in blood</span>
+        </div>
+        <div class="battle-layout">
+          <div class="battle-col">
+            <!-- Log Entry -->
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">📝 LOG TODAY</span></div>
+              <div class="bl-form">
+                <div class="bl-row">
+                  <label class="bl-label">💢 what sucked</label>
+                  <textarea id="bl-bad" class="k-textarea" placeholder="be ruthlessly honest..."></textarea>
+                </div>
+                <div class="bl-row">
+                  <label class="bl-label">✅ one win</label>
+                  <textarea id="bl-good" class="k-textarea" placeholder="you did something right..."></textarea>
+                </div>
+                <div class="bl-row">
+                  <label class="bl-label">🎯 tomorrow's target</label>
+                  <textarea id="bl-target" class="k-textarea" placeholder="one thing only..."></textarea>
+                </div>
+                <div class="bl-mood-row">
+                  <label class="bl-label">⚡ energy today</label>
+                  <div class="mood-pills">
+                    <div class="mp" onclick="setMood(this,1)">💀</div>
+                    <div class="mp" onclick="setMood(this,3)">😤</div>
+                    <div class="mp active" onclick="setMood(this,5)">😐</div>
+                    <div class="mp" onclick="setMood(this,7)">💪</div>
+                    <div class="mp" onclick="setMood(this,10)">🔥</div>
+                  </div>
+                </div>
+                <button class="k-btn" onclick="saveBattleLog()">log battle →</button>
+              </div>
+            </div>
+
+            <!-- Anger Room -->
+            <div class="glass-card anger-room-card">
+              <div class="card-header">
+                <span class="card-title">🔥 ANGER ROOM</span>
+                <span class="card-badge danger">INCINERATE</span>
+              </div>
+              <p class="ar-desc">type your rage. it will be burned. never saved. never judged. just released.</p>
+              <textarea id="anger-in" class="k-textarea anger-textarea" placeholder="write everything you're holding... let it ALL out..."></textarea>
+              <button class="k-btn danger-btn" onclick="burnAnger()" id="burn-btn">
+                <span id="burn-btn-text">🔥 incinerate</span>
+              </button>
+              <div id="anger-out" class="anger-out" style="display:none">
+                <div class="ao-flames">🔥🔥🔥</div>
+                <p id="anger-msg" class="ao-msg">burning...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- History -->
+          <div class="battle-col">
+            <div class="glass-card">
+              <div class="card-header">
+                <span class="card-title">📜 BATTLE HISTORY</span>
+              </div>
+              <div id="battle-history" class="battle-history-list">
+                <div class="empty-state">your battle log starts today ⚔️</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  THE GRIND
+           ╚═══════════════════════════════════ -->
+      <div id="pg-grind" class="page">
+        <div class="page-header-bar">
+          <h2 class="ph-title">💪 THE GRIND</h2>
+          <span class="ph-sub">track every variable. optimize everything.</span>
+        </div>
+
+        <!-- Today's Score Breakdown -->
+        <div class="grind-score-row">
+          <div class="gs-mini-card" id="gsc-targets">
+            <div class="gsc-ring" data-progress="0">
+              <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/><circle class="gsc-arc" cx="30" cy="30" r="24" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8" transform="rotate(-90 30 30)"/></svg>
+              <span class="gsc-pct" id="gsc-targets-pct">0%</span>
+            </div>
+            <span class="gsc-label">Targets</span>
+          </div>
+          <div class="gs-mini-card" id="gsc-workout">
+            <div class="gsc-ring"><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/><circle class="gsc-arc" cx="30" cy="30" r="24" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8" transform="rotate(-90 30 30)"/></svg><span class="gsc-pct" id="gsc-workout-pct">0%</span></div>
+            <span class="gsc-label">Workout</span>
+          </div>
+          <div class="gs-mini-card" id="gsc-study">
+            <div class="gsc-ring"><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/><circle class="gsc-arc" cx="30" cy="30" r="24" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8" transform="rotate(-90 30 30)"/></svg><span class="gsc-pct" id="gsc-study-pct">0%</span></div>
+            <span class="gsc-label">Study</span>
+          </div>
+          <div class="gs-mini-card" id="gsc-daily3">
+            <div class="gsc-ring"><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/><circle class="gsc-arc" cx="30" cy="30" r="24" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8" transform="rotate(-90 30 30)"/></svg><span class="gsc-pct" id="gsc-daily3-pct">0%</span></div>
+            <span class="gsc-label">Daily 3</span>
+          </div>
+          <div class="gs-mini-card" id="gsc-wins">
+            <div class="gsc-ring"><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/><circle class="gsc-arc" cx="30" cy="30" r="24" fill="none" stroke="var(--acc)" stroke-width="4" stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8" transform="rotate(-90 30 30)"/></svg><span class="gsc-pct" id="gsc-wins-pct">0%</span></div>
+            <span class="gsc-label">Wins</span>
+          </div>
+        </div>
+
+        <div class="grind-grid">
+          <!-- Daily Targets -->
+          <div class="glass-card">
+            <div class="card-header">
+              <span class="card-title">🎯 DAILY TARGETS</span>
+              <button class="card-btn" onclick="showAddTarget()">+ add</button>
+            </div>
+            <div id="targets-list" class="targets-list"></div>
+            <div id="add-target-form" class="add-target-form" style="display:none">
+              <input id="target-name" class="k-input" placeholder="target name (e.g. read 30 pages)"/>
+              <button class="k-btn-sm" onclick="addDailyTarget()">add</button>
+              <button class="k-btn-sm ghost" onclick="hideAddTarget()">cancel</button>
+            </div>
+          </div>
+
+          <!-- Workout -->
+          <div class="glass-card">
+            <div class="card-header"><span class="card-title">💪 WORKOUT</span></div>
+            <div class="workout-types">
+              <div class="wt-pill" onclick="toggleWT(this,'push')" data-wt="push">Push</div>
+              <div class="wt-pill" onclick="toggleWT(this,'pull')" data-wt="pull">Pull</div>
+              <div class="wt-pill" onclick="toggleWT(this,'legs')" data-wt="legs">Legs</div>
+              <div class="wt-pill" onclick="toggleWT(this,'cardio')" data-wt="cardio">Cardio</div>
+              <div class="wt-pill" onclick="toggleWT(this,'hiit')" data-wt="hiit">HIIT</div>
+              <div class="wt-pill" onclick="toggleWT(this,'other')" data-wt="other">Other</div>
+            </div>
+            <div class="grind-input-row">
+              <input id="workout-dur" class="k-input" type="number" placeholder="duration (min)" min="0"/>
+              <input id="workout-notes" class="k-input" placeholder="notes (optional)"/>
+            </div>
+            <button class="k-btn" onclick="saveGrind('workout')">log workout →</button>
+          </div>
+
+          <!-- Study -->
+          <div class="glass-card">
+            <div class="card-header"><span class="card-title">📚 STUDY HOURS</span></div>
+            <div class="study-display">
+              <div class="study-from-focus">
+                <span class="sff-label">from focus sessions today:</span>
+                <span class="sff-val" id="study-from-focus">0h 0m</span>
+              </div>
+            </div>
+            <div class="grind-input-row">
+              <input id="study-hrs" class="k-input" type="number" step="0.5" placeholder="additional hours" min="0"/>
+              <input id="study-topic" class="k-input" placeholder="subject/topic"/>
+            </div>
+            <button class="k-btn" onclick="saveGrind('study')">log study →</button>
+          </div>
+
+          <!-- Wins -->
+          <div class="glass-card">
+            <div class="card-header">
+              <span class="card-title">🏆 LOG WINS</span>
+              <span class="card-badge" id="wins-count-badge">0</span>
+            </div>
+            <div class="win-input-row">
+              <input id="win-in" class="k-input" placeholder="what did you win today..." onkeydown="if(event.key==='Enter')addWin()"/>
+              <button class="k-btn-sm" onclick="addWin()">+</button>
+            </div>
+            <div id="win-list" class="win-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  THE PATH
+           ╚═══════════════════════════════════ -->
+      <div id="pg-path" class="page">
+        <div class="page-header-bar">
+          <h2 class="ph-title">🎯 THE PATH</h2>
+          <span class="ph-sub">long-term goals. every milestone counts.</span>
+        </div>
+
+        <div class="path-layout">
+          <div class="path-main">
+            <!-- Add Goal -->
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">+ NEW OBJECTIVE</span></div>
+              <div class="goal-form">
+                <input id="goal-title" class="k-input" placeholder="goal title..."/>
+                <div class="goal-form-row">
+                  <select id="goal-cat" class="k-select">
+                    <option value="academics">📚 academics</option>
+                    <option value="fitness">💪 fitness</option>
+                    <option value="career">🚀 career</option>
+                    <option value="mental">🧠 mental</option>
+                    <option value="personal">🌊 personal</option>
+                    <option value="financial">💰 financial</option>
+                  </select>
+                  <input id="goal-deadline" class="k-input" type="date"/>
+                </div>
+                <textarea id="goal-why" class="k-textarea" placeholder="why does this matter? be specific."></textarea>
+                <button class="k-btn" onclick="addGoal()">set objective →</button>
+              </div>
+            </div>
+
+            <!-- Goals List -->
+            <div id="goals-list" class="goals-list"></div>
+          </div>
+
+          <!-- Musashi Path Advice -->
+          <div class="path-sidebar">
+            <div class="glass-card musashi-path-card">
+              <div class="card-header">
+                <span class="card-title">🗡️ MUSASHI READS YOUR PATH</span>
+                <button class="card-btn" onclick="loadMusashiPath()">analyze</button>
+              </div>
+              <p class="mpc-text" id="musashi-path-txt">click analyze to get Musashi's read on your goals.</p>
+            </div>
+
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">📊 PROGRESS OVERVIEW</span></div>
+              <div id="path-overview" class="path-overview"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  INSIGHTS
+           ╚═══════════════════════════════════ -->
+      <div id="pg-insights" class="page">
+        <div class="page-header-bar">
+          <h2 class="ph-title">📊 INSIGHTS</h2>
+          <span class="ph-sub">your consistency, visualized.</span>
+        </div>
+
+        <!-- Life Heatmap -->
+        <div class="glass-card">
+          <div class="card-header"><span class="card-title">🗓 LIFE HEATMAP</span><span class="card-sub">kaizen score · this year</span></div>
+          <div id="life-heatmap" class="life-heatmap"></div>
+        </div>
+
+        <!-- Weekly Streak -->
+        <div class="glass-card">
+          <div class="card-header"><span class="card-title">🔥 STREAK</span></div>
+          <div id="streak-display" class="streak-display"></div>
+        </div>
+
+        <!-- Energy Chart -->
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">⚡ ENERGY CURVE</span>
+            <div class="chart-tabs">
+              <button class="ct-btn active" onclick="loadEnergyGraph(this,7)">7D</button>
+              <button class="ct-btn" onclick="loadEnergyGraph(this,14)">14D</button>
+              <button class="ct-btn" onclick="loadEnergyGraph(this,30)">30D</button>
+            </div>
+          </div>
+          <div class="chart-container"><canvas id="energy-canvas"></canvas></div>
+          <div id="energy-stats" class="energy-stats-row"></div>
+        </div>
+
+        <!-- Debrief -->
+        <div class="glass-card">
+          <div class="card-header">
+            <span class="card-title">📋 WEEKLY DEBRIEF</span>
+            <button class="card-btn" onclick="loadDebrief()">generate</button>
+          </div>
+          <p id="debrief-txt" class="debrief-text">click generate to get your weekly debrief from Musashi.</p>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  ANALYTICS
+           ╚═══════════════════════════════════ -->
+      <div id="pg-analytics" class="page">
+        <div class="page-header-bar">
+          <h2 class="ph-title">📈 ANALYTICS</h2>
+          <div class="analytics-filters">
+            <button class="af-btn active" onclick="setAnalyticsPeriod('today',this)">Today</button>
+            <button class="af-btn" onclick="setAnalyticsPeriod('week',this)">Weekly</button>
+            <button class="af-btn" onclick="setAnalyticsPeriod('month',this)">Monthly</button>
+            <button class="af-btn" onclick="setAnalyticsPeriod('year',this)">Yearly</button>
+          </div>
+        </div>
+
+        <!-- Top stats -->
+        <div class="analytics-top-row">
+          <div class="at-card glass-card">
+            <div class="atc-val" id="at-focus-time">0h 0m</div>
+            <div class="atc-label">focus time</div>
+            <div class="atc-delta" id="at-focus-delta">+0% vs yesterday</div>
+          </div>
+          <div class="at-card glass-card">
+            <div class="atc-val" id="at-score-avg">0</div>
+            <div class="atc-label">avg kaizen score</div>
+            <div class="atc-delta" id="at-score-delta">—</div>
+          </div>
+          <div class="at-card glass-card">
+            <div class="atc-val" id="at-streak-val">0</div>
+            <div class="atc-label">current streak</div>
+            <div class="atc-delta">🔥 days</div>
+          </div>
+          <div class="at-card glass-card">
+            <div class="atc-val" id="at-tasks-done">0</div>
+            <div class="atc-label">tasks completed</div>
+            <div class="atc-delta" id="at-tasks-delta">—</div>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <!-- Study Trends -->
+          <div class="glass-card analytics-chart-card span-2">
+            <div class="card-header"><span class="card-title">📚 STUDY TIME TRENDS</span></div>
+            <div class="chart-container"><canvas id="study-chart"></canvas></div>
+          </div>
+
+          <!-- Subject Distribution -->
+          <div class="glass-card analytics-chart-card">
+            <div class="card-header"><span class="card-title">🎯 SUBJECT DISTRIBUTION</span></div>
+            <div class="chart-container"><canvas id="subject-chart"></canvas></div>
+          </div>
+
+          <!-- Kaizen Score Graph -->
+          <div class="glass-card analytics-chart-card">
+            <div class="card-header"><span class="card-title">⚡ KAIZEN SCORE HISTORY</span></div>
+            <div class="chart-container"><canvas id="score-chart"></canvas></div>
+          </div>
+
+          <!-- Peak Performance -->
+          <div class="glass-card analytics-chart-card">
+            <div class="card-header"><span class="card-title">🏆 PEAK PERFORMANCE</span></div>
+            <div class="peak-perf-list" id="peak-perf-list">
+              <div class="pp-row"><span class="pp-label">Morning</span><div class="pp-bar-wrap"><div class="pp-bar" id="pp-morning" style="width:0%"></div></div><span class="pp-pct" id="pp-morning-pct">0%</span></div>
+              <div class="pp-row"><span class="pp-label">Afternoon</span><div class="pp-bar-wrap"><div class="pp-bar" id="pp-afternoon" style="width:0%"></div></div><span class="pp-pct" id="pp-afternoon-pct">0%</span></div>
+              <div class="pp-row"><span class="pp-label">Evening</span><div class="pp-bar-wrap"><div class="pp-bar" id="pp-evening" style="width:0%"></div></div><span class="pp-pct" id="pp-evening-pct">0%</span></div>
+            </div>
+          </div>
+
+          <!-- After Action Report -->
+          <div class="glass-card analytics-chart-card span-2">
+            <div class="card-header">
+              <span class="card-title">📋 AFTER ACTION REPORT</span>
+              <button class="card-btn" onclick="generateAAR()">generate</button>
+            </div>
+            <div id="aar-content" class="aar-content">
+              <p class="aar-empty">click generate to get your AI-written weekly debrief. a warrior of your choice will review your data and tell you exactly what happened.</p>
+            </div>
+            <div id="aar-warrior-select" class="aar-warrior-select">
+              <span class="aws-label">written by:</span>
+              <select id="aar-warrior" class="k-select">
+                <option value="musashi">🗡️ Musashi</option>
+                <option value="guts">⚔️ Guts</option>
+                <option value="sasuke">🔥 Sasuke</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ╔═══════════════════════════════════
+           ║  PROFILE
+           ╚═══════════════════════════════════ -->
+      <div id="pg-profile" class="page">
+        <div class="profile-layout">
+
+          <!-- Profile Card -->
+          <div class="glass-card profile-card">
+            <div class="prof-avatar-wrap">
+              <div class="prof-avatar" id="prof-avatar"></div>
+              <div class="prof-badge">warrior</div>
+            </div>
+            <div class="prof-info">
+              <h2 class="prof-name" id="prof-name">—</h2>
+              <p class="prof-email" id="prof-email">—</p>
+              <div class="prof-stats">
+                <div class="pstat"><span id="prof-streak">0</span><small>streak</small></div>
+                <div class="pstat"><span id="prof-score">0</span><small>best score</small></div>
+                <div class="pstat"><span id="prof-days">0</span><small>days active</small></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-sections">
+
+            <!-- Edit Profile -->
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">✏️ EDIT PROFILE</span></div>
+              <div class="prof-edit-form">
+                <input id="edit-name" class="k-input" placeholder="your name"/>
+                <button class="k-btn-sm" onclick="saveProfile()">save changes</button>
+              </div>
+            </div>
+
+            <!-- Vision Board -->
+            <div class="glass-card vision-board-card">
+              <div class="card-header">
+                <span class="card-title">🌊 VISION BOARD</span>
+                <button class="card-btn" onclick="showAddVision()">+ add</button>
+              </div>
+              <p class="vb-desc">your visions float across the war room header like fish in water.</p>
+              <div id="add-vision-form" class="add-vision-form" style="display:none">
+                <input id="vision-text" class="k-input" placeholder="your vision (e.g. Harvard Medical, 6-pack, ₹1Cr)"/>
+                <div class="vision-type-row">
+                  <select id="vision-emoji" class="k-select">
+                    <option value="🏆">🏆 achievement</option>
+                    <option value="💰">💰 financial</option>
+                    <option value="💪">💪 fitness</option>
+                    <option value="🎓">🎓 academic</option>
+                    <option value="🌍">🌍 travel</option>
+                    <option value="❤️">❤️ relationship</option>
+                    <option value="🚀">🚀 career</option>
+                    <option value="🏠">🏠 lifestyle</option>
+                  </select>
+                  <button class="k-btn-sm" onclick="addVision()">add to board</button>
+                </div>
+              </div>
+              <div id="vision-list" class="vision-list"></div>
+            </div>
+
+            <!-- Theme -->
+            <div class="glass-card">
+              <div class="card-header"><span class="card-title">🎨 THEME</span></div>
+              <div class="theme-selector-grid">
+                <div class="ts-card active" data-theme="obsidian" onclick="setTheme(this,'obsidian')">
+                  <div class="tsc-preview tsc-obsidian"></div>
+                  <span>Obsidian HUD</span>
+                </div>
+                <div class="ts-card" data-theme="academic" onclick="setTheme(this,'academic')">
+                  <div class="tsc-preview tsc-academic"></div>
+                  <span>Academic Graph</span>
+                </div>
+                <div class="ts-card" data-theme="samurai" onclick="setTheme(this,'samurai')">
+                  <div class="tsc-preview tsc-samurai"></div>
+                  <span>Samurai Dojo</span>
+                </div>
+                <div class="ts-card" data-theme="arctic" onclick="setTheme(this,'arctic')">
+                  <div class="tsc-preview tsc-arctic"></div>
+                  <span>Arctic Terminal</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="glass-card danger-zone">
+              <div class="card-header"><span class="card-title danger-text">⚠️ DANGER ZONE</span></div>
+              <div class="dz-actions">
+                <button class="dz-btn" onclick="doSignOut()">sign out</button>
+                <button class="dz-btn dz-delete" onclick="deleteAccount()">delete account</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ── BOTTOM DOCK ── -->
+    <nav class="bottom-dock" id="bottom-dock">
+      <div class="dock-inner">
+        <div class="dock-item active" data-page="warroom" onclick="navTo('warroom')">
+          <div class="di-icon">🏠</div>
+          <span class="di-label">War Room</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="focus" onclick="navTo('focus')">
+          <div class="di-icon">⏱</div>
+          <span class="di-label">Focus</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="warriors" onclick="navTo('warriors')">
+          <div class="di-icon">⚔️</div>
+          <span class="di-label">Warriors</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="battlelog" onclick="navTo('battlelog')">
+          <div class="di-icon">📋</div>
+          <span class="di-label">Battle Log</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="grind" onclick="navTo('grind')">
+          <div class="di-icon">💪</div>
+          <span class="di-label">Grind</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="path" onclick="navTo('path')">
+          <div class="di-icon">🎯</div>
+          <span class="di-label">Path</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="insights" onclick="navTo('insights')">
+          <div class="di-icon">📊</div>
+          <span class="di-label">Insights</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="analytics" onclick="navTo('analytics')">
+          <div class="di-icon">📈</div>
+          <span class="di-label">Analytics</span>
+          <div class="di-indicator"></div>
+        </div>
+        <div class="dock-item" data-page="profile" onclick="navTo('profile')">
+          <div class="di-icon" id="dock-avatar">👤</div>
+          <span class="di-label">Profile</span>
+          <div class="di-indicator"></div>
+        </div>
+      </div>
+    </nav>
+
+  </div>
+</div>
+
+<!-- Add Subject Modal -->
+<div id="modal-subject" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-card glass-card">
+    <h3 class="modal-title">add subject</h3>
+    <input id="new-subject-name" class="k-input" placeholder="subject name (e.g. Physics, DSA, History)"/>
+    <div class="modal-actions">
+      <button class="k-btn" onclick="addSubject()">add</button>
+      <button class="k-btn-sm ghost" onclick="document.getElementById('modal-subject').style.display='none'">cancel</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
