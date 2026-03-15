@@ -1407,7 +1407,6 @@ async function checkSundayDebrief() {
 }
 
 // ─── HABITS ───
-let selectedHabitEmoji = "🧘";
 window.selectHabitEmoji = (el, emoji) => {
   selectedHabitEmoji = emoji;
   document.querySelectorAll(".he-pick").forEach(e => e.classList.remove("active"));
